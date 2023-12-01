@@ -1,5 +1,4 @@
 use aoc_runner_derive::aoc;
-use std::ops::AddAssign;
 
 #[aoc(day1, part1)]
 fn part1(input: &str) -> u32 {
@@ -9,11 +8,11 @@ fn part1(input: &str) -> u32 {
             let mut result = "".to_string();
 
             if let Some(c) = line.chars().find(char::is_ascii_digit) {
-                result.add_assign(&c.to_string());
+                result.push(c);
             }
 
             if let Some(c) = line.chars().rev().find(char::is_ascii_digit) {
-                result.add_assign(&c.to_string());
+                result.push(c);
             }
 
             result.parse::<u32>().unwrap()
@@ -53,7 +52,7 @@ fn part2(input: &str) -> u32 {
                 .filter_map(|&sub| line.find(sub).map(|i| (i, sub)))
                 .min_by_key(|&(i, _)| i)
             {
-                result.add_assign(substring_to_digit(first));
+                result += substring_to_digit(first);
             }
 
             if let Some((_, last)) = SUBSTRINGS
@@ -61,7 +60,7 @@ fn part2(input: &str) -> u32 {
                 .filter_map(|&sub| line.rfind(sub).map(|i| (i, sub)))
                 .max_by_key(|&(i, _)| i)
             {
-                result.add_assign(substring_to_digit(last));
+                result += substring_to_digit(last);
             }
 
             result.parse::<u32>().unwrap()
