@@ -91,26 +91,6 @@ fn map_ranges(range: Range<u64>, map: &Map) -> Vec<Range<u64>> {
         .collect_vec()
 }
 
-fn combine_ranges(ranges: Vec<Range<u64>>) -> Vec<Range<u64>> {
-    let mut ranges = ranges;
-    ranges.sort_by_key(|r| r.start);
-
-    let mut combined_ranges = Vec::new();
-    let mut current_range = ranges[0].clone();
-
-    for range in ranges.iter().skip(1) {
-        if range.start <= current_range.end {
-            current_range.end = current_range.end.max(range.end);
-        } else {
-            combined_ranges.push(current_range);
-            current_range = range.clone();
-        }
-    }
-
-    combined_ranges.push(current_range);
-    combined_ranges
-}
-
 fn parse(input: &str, seeds_are_ranges: bool) -> Almanac {
     let input: Vec<&str> = input.split("\n\n").collect();
 
@@ -197,51 +177,16 @@ fn part1(almanac: &Almanac) -> u64 {
 #[aoc(day5, part2)]
 fn part2(almanac: &Almanac) -> u64 {
     if let Seeds::Ranges(seeds) = &almanac.seeds {
-        combine_ranges(seeds.clone())
+        seeds
             .iter()
-            .map(|range| map_ranges(range.clone(), &almanac.seed_to_soil))
-            .fold(Vec::<Range<u64>>::new(), |mut acc, mut vec| {
-                acc.append(&mut vec);
-                combine_ranges(acc)
-            })
-            .iter()
-            .map(|range| map_ranges(range.clone(), &almanac.soil_to_fertilizer))
-            .fold(Vec::<Range<u64>>::new(), |mut acc, mut vec| {
-                acc.append(&mut vec);
-                combine_ranges(acc)
-            })
-            .iter()
-            .map(|range| map_ranges(range.clone(), &almanac.fertilizer_to_water))
-            .fold(Vec::<Range<u64>>::new(), |mut acc, mut vec| {
-                acc.append(&mut vec);
-                combine_ranges(acc)
-            })
-            .iter()
-            .map(|range| map_ranges(range.clone(), &almanac.water_to_light))
-            .fold(Vec::<Range<u64>>::new(), |mut acc, mut vec| {
-                acc.append(&mut vec);
-                combine_ranges(acc)
-            })
-            .iter()
-            .map(|range| map_ranges(range.clone(), &almanac.light_to_temperature))
-            .fold(Vec::<Range<u64>>::new(), |mut acc, mut vec| {
-                acc.append(&mut vec);
-                combine_ranges(acc)
-            })
-            .iter()
-            .map(|range| map_ranges(range.clone(), &almanac.temperature_to_humidity))
-            .fold(Vec::<Range<u64>>::new(), |mut acc, mut vec| {
-                acc.append(&mut vec);
-                combine_ranges(acc)
-            })
-            .iter()
-            .map(|range| map_ranges(range.clone(), &almanac.humidity_to_location))
-            .fold(Vec::<Range<u64>>::new(), |mut acc, mut vec| {
-                acc.append(&mut vec);
-                combine_ranges(acc)
-            })
-            .iter()
-            .flat_map(|range| range.clone())
+            .flat_map(|range| map_ranges(range.clone(), &almanac.seed_to_soil))
+            .flat_map(|range| map_ranges(range.clone(), &almanac.soil_to_fertilizer))
+            .flat_map(|range| map_ranges(range.clone(), &almanac.fertilizer_to_water))
+            .flat_map(|range| map_ranges(range.clone(), &almanac.water_to_light))
+            .flat_map(|range| map_ranges(range.clone(), &almanac.light_to_temperature))
+            .flat_map(|range| map_ranges(range.clone(), &almanac.temperature_to_humidity))
+            .flat_map(|range| map_ranges(range.clone(), &almanac.humidity_to_location))
+            .map(|range| range.start)
             .min()
             .unwrap()
     } else {
@@ -358,13 +303,5 @@ mod tests {
         assert_eq!(map_ranges(3..8, &map), vec![8..10, 5..7, 2..3]);
         assert_eq!(map_ranges(7..17, &map), vec![2..5, 10..17]);
         assert_eq!(map_ranges(11..17, &map), vec![11..17]);
-    }
-
-    #[test]
-    fn test_combine_ranges() {
-        assert_eq!(combine_ranges(vec![0..10, 15..20]), vec![0..10, 15..20]);
-        assert_eq!(combine_ranges(vec![0..15, 5..10]), vec![0..15]);
-        assert_eq!(combine_ranges(vec![0..10, 10..20]), vec![0..20]);
-        assert_eq!(combine_ranges(vec![0..10, 5..15]), vec![0..15]);
     }
 }
