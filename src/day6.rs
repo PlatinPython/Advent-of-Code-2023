@@ -3,35 +3,34 @@ use itertools::Itertools;
 
 #[aoc(day6, part1)]
 fn part1(input: &str) -> usize {
-    let (time, distance) = input.lines().collect_tuple().unwrap();
+    let (time, distance) = input
+        .lines()
+        .map(|line| {
+            line.split_whitespace()
+                .skip(1)
+                .map(str::parse)
+                .map(Result::unwrap)
+        })
+        .collect_tuple()
+        .unwrap();
 
-    let time = time
-        .split_whitespace()
-        .skip(1)
-        .map(|s| s.parse::<u32>())
-        .map(Result::unwrap);
-    let distance = distance
-        .split_whitespace()
-        .skip(1)
-        .map(|s| s.parse::<u32>())
-        .map(Result::unwrap);
-    let races: Vec<(u32, u32)> = time.interleave(distance).tuples().collect_vec();
-
-    races
-        .iter()
-        .map(|(time, distance)| (0u32..*time).filter(|i| i * (time - i) > *distance).count())
+    time.interleave(distance)
+        .tuples()
+        .map(|(time, distance)| (0u32..time).filter(|i| i * (time - i) > distance).count())
         .product()
 }
 
 #[aoc(day6, part2)]
-fn part2(input: &str) -> usize {
-    let (time, distance) = input
+fn part2(input: &str) -> u64 {
+    let (time, distance): (f64, f64) = input
         .lines()
         .map(|line| line.split_whitespace().skip(1).join("").parse().unwrap())
         .collect_tuple()
         .unwrap();
 
-    (0u64..time).filter(|i| i * (time - i) > distance).count()
+    let half_time = time / 2.;
+    let max = half_time + ((half_time * half_time) - distance).sqrt();
+    (max - (time - max)) as u64
 }
 
 #[cfg(test)]
