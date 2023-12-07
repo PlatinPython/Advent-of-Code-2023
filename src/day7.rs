@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
-enum CardPart1 {
+enum Card {
     C2,
     C3,
     C4,
@@ -20,79 +20,37 @@ enum CardPart1 {
     CA,
 }
 
-impl From<char> for CardPart1 {
-    fn from(value: char) -> Self {
-        match value {
-            '2' => CardPart1::C2,
-            '3' => CardPart1::C3,
-            '4' => CardPart1::C4,
-            '5' => CardPart1::C5,
-            '6' => CardPart1::C6,
-            '7' => CardPart1::C7,
-            '8' => CardPart1::C8,
-            '9' => CardPart1::C9,
-            'T' => CardPart1::CT,
-            'J' => CardPart1::CJ,
-            'Q' => CardPart1::CQ,
-            'K' => CardPart1::CK,
-            'A' => CardPart1::CA,
-            _ => panic!("Unknown Card"),
+impl Card {
+    fn cmp(&self, other: &Self, part2: bool) -> Ordering {
+        if part2 {
+            match (self, other) {
+                (Card::CJ, Card::CJ) => Ordering::Equal,
+                (Card::CJ, _) => Ordering::Less,
+                (_, Card::CJ) => Ordering::Greater,
+                _ => Ord::cmp(self, other),
+            }
+        } else {
+            Ord::cmp(self, other)
         }
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
-enum CardPart2 {
-    CJ,
-    C2,
-    C3,
-    C4,
-    C5,
-    C6,
-    C7,
-    C8,
-    C9,
-    CT,
-    CQ,
-    CK,
-    CA,
-}
-
-impl CardPart2 {
-    fn values() -> [CardPart2; 12] {
-        [
-            CardPart2::C2,
-            CardPart2::C3,
-            CardPart2::C4,
-            CardPart2::C5,
-            CardPart2::C6,
-            CardPart2::C7,
-            CardPart2::C8,
-            CardPart2::C9,
-            CardPart2::CT,
-            CardPart2::CQ,
-            CardPart2::CK,
-            CardPart2::CA,
-        ]
-    }
-}
-
-impl From<char> for CardPart2 {
+impl From<char> for Card {
     fn from(value: char) -> Self {
         match value {
-            'J' => CardPart2::CJ,
-            '2' => CardPart2::C2,
-            '3' => CardPart2::C3,
-            '4' => CardPart2::C4,
-            '5' => CardPart2::C5,
-            '6' => CardPart2::C6,
-            '7' => CardPart2::C7,
-            '8' => CardPart2::C8,
-            '9' => CardPart2::C9,
-            'T' => CardPart2::CT,
-            'Q' => CardPart2::CQ,
-            'K' => CardPart2::CK,
-            'A' => CardPart2::CA,
+            '2' => Card::C2,
+            '3' => Card::C3,
+            '4' => Card::C4,
+            '5' => Card::C5,
+            '6' => Card::C6,
+            '7' => Card::C7,
+            '8' => Card::C8,
+            '9' => Card::C9,
+            'T' => Card::CT,
+            'J' => Card::CJ,
+            'Q' => Card::CQ,
+            'K' => Card::CK,
+            'A' => Card::CA,
             _ => panic!("Unknown Card"),
         }
     }
@@ -109,11 +67,11 @@ enum Type {
     FiveOfAKind,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-struct HandPart1(CardPart1, CardPart1, CardPart1, CardPart1, CardPart1);
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct Hand(Card, Card, Card, Card, Card);
 
-impl HandPart1 {
-    fn get_type(&self) -> Type {
+impl Hand {
+    fn get_type_part1(&self) -> Type {
         let mut counts = HashMap::new();
         for &card in &[self.0, self.1, self.2, self.3, self.4] {
             *counts.entry(card).or_insert(0) += 1;
@@ -133,214 +91,85 @@ impl HandPart1 {
             _ => panic!("Invalid Hand"),
         }
     }
-}
 
-impl From<(CardPart1, CardPart1, CardPart1, CardPart1, CardPart1)> for HandPart1 {
-    fn from(value: (CardPart1, CardPart1, CardPart1, CardPart1, CardPart1)) -> Self {
-        Self(value.0, value.1, value.2, value.3, value.4)
-    }
-}
+    fn get_type_part2(&self) -> Type {
+        let mut counts = HashMap::new();
+        let mut jokers = 0;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-struct HandPart2(CardPart2, CardPart2, CardPart2, CardPart2, CardPart2);
-
-impl HandPart2 {
-    fn get_type(&self) -> Type {
-        // let mut counts = HashMap::new();
-        // let mut jokers = 0;
-        //
-        // for &card in &[self.0, self.1, self.2, self.3, self.4] {
-        //     if card == CardPart2::CJ {
-        //         jokers += 1;
-        //     } else {
-        //         *counts.entry(card).or_insert(0) += 1;
-        //     }
-        // }
-        //
-        // if jokers > 0 {
-        //     let mut counts = counts.values().collect_vec();
-        //     counts.sort();
-        //     counts.reverse();
-        //
-        //     match counts[..] {
-        //         [4] if jokers >= 1 => Type::FiveOfAKind,
-        //         [3] if jokers >= 2 => Type::FiveOfAKind,
-        //         [2] if jokers >= 3 => Type::FiveOfAKind,
-        //         [1] if jokers >= 4 => Type::FiveOfAKind,
-        //         [] if jokers >= 5 => Type::FiveOfAKind,
-        //         [3, _] if jokers >= 1 => Type::FourOfAKind,
-        //         [2, _] if jokers >= 2 => Type::FourOfAKind,
-        //         [1, _] if jokers >= 3 => Type::FourOfAKind,
-        //         [_] if jokers >= 4 => Type::FourOfAKind,
-        //         [2, 2] if jokers >= 1 => Type::FullHouse,
-        //         [2, 1] if jokers >= 2 => Type::FullHouse,
-        //         [1, 1] if jokers >= 3 => Type::FullHouse,
-        //         // [1] if jokers >= 4 => Type::FullHouse,
-        //         // [] if jokers >= 5 => Type::FullHouse,
-        //         [2, _] if jokers >= 1 => Type::ThreeOfAKind,
-        //         [1, _] if jokers >= 2 => Type::ThreeOfAKind,
-        //         [_] if jokers >= 3 => Type::ThreeOfAKind,
-        //         [2, 1, _] if jokers >= 1 => Type::TwoPair,
-        //         [1, 1, _] if jokers >= 2 => Type::TwoPair,
-        //         [2, _] if jokers >= 2 => Type::TwoPair,
-        //         [1, _] if jokers >= 3 => Type::TwoPair,
-        //         [_] if jokers >= 4 => Type::TwoPair,
-        //         [1, _] if jokers >= 1 => Type::OnePair,
-        //         [_] if jokers >= 2 => Type::OnePair,
-        //         _ => Type::HighCard,
-        //     }
-        // } else {
-        //     let mut counts = counts.values().collect_vec();
-        //     counts.sort();
-        //
-        //     match counts[..] {
-        //         [5] => Type::FiveOfAKind,
-        //         [1, 4] => Type::FourOfAKind,
-        //         [2, 3] => Type::FullHouse,
-        //         [1, 1, 3] => Type::ThreeOfAKind,
-        //         [1, 2, 2] => Type::TwoPair,
-        //         [1, 1, 1, 2] => Type::OnePair,
-        //         [1, 1, 1, 1, 1] => Type::HighCard,
-        //         _ => panic!("Invalid Hand"),
-        //     }
-        // }
-
-        let mut hands = vec![*self];
-        while hands.iter().any(|hand| {
-            hand.0 == CardPart2::CJ
-                || hand.1 == CardPart2::CJ
-                || hand.2 == CardPart2::CJ
-                || hand.3 == CardPart2::CJ
-                || hand.4 == CardPart2::CJ
-        }) {
-            let mut new_hands = vec![];
-            for hand in &hands {
-                if hand.0 == CardPart2::CJ {
-                    new_hands.append(
-                        &mut CardPart2::values()
-                            .map(|card| HandPart2(card, hand.1, hand.2, hand.3, hand.4))
-                            .to_vec(),
-                    )
-                } else if hand.1 == CardPart2::CJ {
-                    new_hands.append(
-                        &mut CardPart2::values()
-                            .map(|card| HandPart2(hand.0, card, hand.2, hand.3, hand.4))
-                            .to_vec(),
-                    )
-                } else if hand.2 == CardPart2::CJ {
-                    new_hands.append(
-                        &mut CardPart2::values()
-                            .map(|card| HandPart2(hand.0, hand.1, card, hand.3, hand.4))
-                            .to_vec(),
-                    )
-                } else if hand.3 == CardPart2::CJ {
-                    new_hands.append(
-                        &mut CardPart2::values()
-                            .map(|card| HandPart2(hand.0, hand.1, hand.2, card, hand.4))
-                            .to_vec(),
-                    )
-                } else if hand.4 == CardPart2::CJ {
-                    new_hands.append(
-                        &mut CardPart2::values()
-                            .map(|card| HandPart2(hand.0, hand.1, hand.2, hand.3, card))
-                            .to_vec(),
-                    )
-                }
-            }
-            hands = new_hands;
-        }
-        hands.iter().fold(Type::HighCard, |acc, hand| {
-            let mut counts = HashMap::new();
-            for &card in &[hand.0, hand.1, hand.2, hand.3, hand.4] {
+        for &card in &[self.0, self.1, self.2, self.3, self.4] {
+            if card == Card::CJ {
+                jokers += 1;
+            } else {
                 *counts.entry(card).or_insert(0) += 1;
             }
+        }
 
-            let mut counts = counts.values().collect_vec();
-            counts.sort();
+        let mut counts = counts.values().copied().collect_vec();
+        counts.sort();
+        if counts.is_empty() {
+            counts = vec![jokers];
+        } else {
+            *counts.last_mut().unwrap() += jokers;
+        }
 
-            let hand_type = match counts[..] {
-                [5] => Type::FiveOfAKind,
-                [1, 4] => Type::FourOfAKind,
-                [2, 3] => Type::FullHouse,
-                [1, 1, 3] => Type::ThreeOfAKind,
-                [1, 2, 2] => Type::TwoPair,
-                [1, 1, 1, 2] => Type::OnePair,
-                [1, 1, 1, 1, 1] => Type::HighCard,
-                _ => panic!("Invalid Hand"),
-            };
-
-            if hand_type > acc {
-                hand_type
+        if counts.iter().any(|i| *i == 5) {
+            Type::FiveOfAKind
+        } else if counts.iter().any(|i| *i == 4) {
+            Type::FourOfAKind
+        } else if counts.iter().any(|i| *i == 3) {
+            if counts.iter().any(|i| *i == 2) {
+                Type::FullHouse
             } else {
-                acc
+                Type::ThreeOfAKind
             }
-        })
+        } else if counts.iter().any(|i| *i == 2) {
+            if counts.iter().filter(|i| **i == 1).count() == 1 {
+                Type::TwoPair
+            } else {
+                Type::OnePair
+            }
+        } else {
+            Type::HighCard
+        }
+    }
+
+    fn cmp(&self, other: &Self, part2: bool) -> Ordering {
+        self.0
+            .cmp(&other.0, part2)
+            .then(self.1.cmp(&other.1, part2))
+            .then(self.2.cmp(&other.2, part2))
+            .then(self.3.cmp(&other.3, part2))
+            .then(self.4.cmp(&other.4, part2))
     }
 }
 
-impl From<(CardPart2, CardPart2, CardPart2, CardPart2, CardPart2)> for HandPart2 {
-    fn from(value: (CardPart2, CardPart2, CardPart2, CardPart2, CardPart2)) -> Self {
+impl From<(Card, Card, Card, Card, Card)> for Hand {
+    fn from(value: (Card, Card, Card, Card, Card)) -> Self {
         Self(value.0, value.1, value.2, value.3, value.4)
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct RoundPart1(HandPart1, u32);
+struct Round(Hand, u32);
 
-impl PartialOrd for RoundPart1 {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for RoundPart1 {
-    fn cmp(&self, other: &Self) -> Ordering {
-        let ord = self.0.get_type().cmp(&other.0.get_type());
-        if ord != Ordering::Equal {
-            return ord;
+impl Round {
+    fn cmp(&self, other: &Self, part2: bool) -> Ordering {
+        if part2 {
+            self.0.get_type_part2()
+        } else {
+            self.0.get_type_part1()
         }
-        self.0.cmp(&other.0)
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct RoundPart2(HandPart2, u32);
-
-impl PartialOrd for RoundPart2 {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for RoundPart2 {
-    fn cmp(&self, other: &Self) -> Ordering {
-        let ord = self.0.get_type().cmp(&other.0.get_type());
-        if ord != Ordering::Equal {
-            return ord;
-        }
-        self.0.cmp(&other.0)
-    }
-}
-
-#[aoc_generator(day7, part1)]
-fn parse_part1(input: &str) -> Vec<RoundPart1> {
-    input
-        .lines()
-        .map(|line| {
-            let (hand, bid) = line.split_once(' ').unwrap();
-            let hand = hand
-                .chars()
-                .map(|c| c.into())
-                .collect_tuple::<(CardPart1, CardPart1, CardPart1, CardPart1, CardPart1)>()
-                .unwrap()
-                .into();
-            RoundPart1(hand, bid.trim().parse().unwrap())
+        .cmp(&if part2 {
+            other.0.get_type_part2()
+        } else {
+            other.0.get_type_part1()
         })
-        .collect_vec()
+        .then(self.0.cmp(&other.0, part2))
+    }
 }
 
-#[aoc_generator(day7, part2)]
-fn parse_part2(input: &str) -> Vec<RoundPart2> {
+#[aoc_generator(day7)]
+fn parse(input: &str) -> Vec<Round> {
     input
         .lines()
         .map(|line| {
@@ -348,18 +177,18 @@ fn parse_part2(input: &str) -> Vec<RoundPart2> {
             let hand = hand
                 .chars()
                 .map(|c| c.into())
-                .collect_tuple::<(CardPart2, CardPart2, CardPart2, CardPart2, CardPart2)>()
+                .collect_tuple::<(Card, Card, Card, Card, Card)>()
                 .unwrap()
                 .into();
-            RoundPart2(hand, bid.trim().parse().unwrap())
+            Round(hand, bid.trim().parse().unwrap())
         })
         .collect_vec()
 }
 
 #[aoc(day7, part1)]
-fn part1(input: &[RoundPart1]) -> u32 {
+fn part1(input: &[Round]) -> u32 {
     let mut input = input.to_vec();
-    input.sort();
+    input.sort_by(|a, b| a.cmp(b, false));
     input
         .iter()
         .enumerate()
@@ -367,9 +196,9 @@ fn part1(input: &[RoundPart1]) -> u32 {
 }
 
 #[aoc(day7, part2)]
-fn part2(input: &[RoundPart2]) -> u32 {
+fn part2(input: &[Round]) -> u32 {
     let mut input = input.to_vec();
-    input.sort();
+    input.sort_by(|a, b| a.cmp(b, true));
     input
         .iter()
         .enumerate()
@@ -392,58 +221,13 @@ mod tests {
         "};
 
         assert_eq!(
-            parse_part1(input),
+            parse(input),
             vec![
-                RoundPart1(
-                    HandPart1(
-                        CardPart1::C3,
-                        CardPart1::C2,
-                        CardPart1::CT,
-                        CardPart1::C3,
-                        CardPart1::CK
-                    ),
-                    765
-                ),
-                RoundPart1(
-                    HandPart1(
-                        CardPart1::CT,
-                        CardPart1::C5,
-                        CardPart1::C5,
-                        CardPart1::CJ,
-                        CardPart1::C5
-                    ),
-                    684
-                ),
-                RoundPart1(
-                    HandPart1(
-                        CardPart1::CK,
-                        CardPart1::CK,
-                        CardPart1::C6,
-                        CardPart1::C7,
-                        CardPart1::C7
-                    ),
-                    28
-                ),
-                RoundPart1(
-                    HandPart1(
-                        CardPart1::CK,
-                        CardPart1::CT,
-                        CardPart1::CJ,
-                        CardPart1::CJ,
-                        CardPart1::CT
-                    ),
-                    220
-                ),
-                RoundPart1(
-                    HandPart1(
-                        CardPart1::CQ,
-                        CardPart1::CQ,
-                        CardPart1::CQ,
-                        CardPart1::CJ,
-                        CardPart1::CA
-                    ),
-                    483
-                ),
+                Round(Hand(Card::C3, Card::C2, Card::CT, Card::C3, Card::CK), 765),
+                Round(Hand(Card::CT, Card::C5, Card::C5, Card::CJ, Card::C5), 684),
+                Round(Hand(Card::CK, Card::CK, Card::C6, Card::C7, Card::C7), 28),
+                Round(Hand(Card::CK, Card::CT, Card::CJ, Card::CJ, Card::CT), 220),
+                Round(Hand(Card::CQ, Card::CQ, Card::CQ, Card::CJ, Card::CA), 483),
             ]
         )
     }
@@ -458,7 +242,7 @@ mod tests {
             QQQJA 483
         "};
 
-        assert_eq!(part1(&parse_part1(input)), 6440);
+        assert_eq!(part1(&parse(input)), 6440);
     }
 
     #[test]
@@ -471,6 +255,6 @@ mod tests {
             QQQJA 483
         "};
 
-        assert_eq!(part2(&parse_part2(input)), 5905);
+        assert_eq!(part2(&parse(input)), 5905);
     }
 }
