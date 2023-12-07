@@ -71,33 +71,12 @@ enum Type {
 struct Hand(Card, Card, Card, Card, Card);
 
 impl Hand {
-    fn get_type_part1(&self) -> Type {
-        let mut counts = HashMap::new();
-        for &card in &[self.0, self.1, self.2, self.3, self.4] {
-            *counts.entry(card).or_insert(0) += 1;
-        }
-
-        let mut counts = counts.values().collect_vec();
-        counts.sort();
-
-        match counts[..] {
-            [5] => Type::FiveOfAKind,
-            [1, 4] => Type::FourOfAKind,
-            [2, 3] => Type::FullHouse,
-            [1, 1, 3] => Type::ThreeOfAKind,
-            [1, 2, 2] => Type::TwoPair,
-            [1, 1, 1, 2] => Type::OnePair,
-            [1, 1, 1, 1, 1] => Type::HighCard,
-            _ => panic!("Invalid Hand"),
-        }
-    }
-
-    fn get_type_part2(&self) -> Type {
+    fn get_type(&self, part2: bool) -> Type {
         let mut counts = HashMap::new();
         let mut jokers = 0;
 
         for &card in &[self.0, self.1, self.2, self.3, self.4] {
-            if card == Card::CJ {
+            if part2 && card == Card::CJ {
                 jokers += 1;
             } else {
                 *counts.entry(card).or_insert(0) += 1;
@@ -105,31 +84,25 @@ impl Hand {
         }
 
         let mut counts = counts.values().copied().collect_vec();
-        counts.sort();
-        if counts.is_empty() {
-            counts = vec![jokers];
-        } else {
-            *counts.last_mut().unwrap() += jokers;
+        if part2 {
+            counts.sort();
+            if counts.is_empty() {
+                counts = vec![jokers];
+            } else {
+                *counts.last_mut().unwrap() += jokers;
+            }
         }
+        counts.sort();
+        counts.reverse();
 
-        if counts.iter().any(|i| *i == 5) {
-            Type::FiveOfAKind
-        } else if counts.iter().any(|i| *i == 4) {
-            Type::FourOfAKind
-        } else if counts.iter().any(|i| *i == 3) {
-            if counts.iter().any(|i| *i == 2) {
-                Type::FullHouse
-            } else {
-                Type::ThreeOfAKind
-            }
-        } else if counts.iter().any(|i| *i == 2) {
-            if counts.iter().filter(|i| **i == 1).count() == 1 {
-                Type::TwoPair
-            } else {
-                Type::OnePair
-            }
-        } else {
-            Type::HighCard
+        match counts[..] {
+            [5, ..] => Type::FiveOfAKind,
+            [4, ..] => Type::FourOfAKind,
+            [3, 2, ..] => Type::FullHouse,
+            [3, ..] => Type::ThreeOfAKind,
+            [2, 2, ..] => Type::TwoPair,
+            [2, ..] => Type::OnePair,
+            [..] => Type::HighCard,
         }
     }
 
@@ -154,17 +127,10 @@ struct Round(Hand, u32);
 
 impl Round {
     fn cmp(&self, other: &Self, part2: bool) -> Ordering {
-        if part2 {
-            self.0.get_type_part2()
-        } else {
-            self.0.get_type_part1()
-        }
-        .cmp(&if part2 {
-            other.0.get_type_part2()
-        } else {
-            other.0.get_type_part1()
-        })
-        .then(self.0.cmp(&other.0, part2))
+        self.0
+            .get_type(part2)
+            .cmp(&other.0.get_type(part2))
+            .then(self.0.cmp(&other.0, part2))
     }
 }
 
