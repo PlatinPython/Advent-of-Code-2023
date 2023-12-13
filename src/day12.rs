@@ -1,13 +1,16 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use memoize::memoize;
+use michie::memoized;
+use std::collections::HashMap;
 
 #[aoc_generator(day12)]
-fn parse(input: &str) -> Vec<(Vec<char>, Vec<u32>)> {
+fn parse(input: &str) -> Vec<(usize, Vec<char>, Vec<u32>)> {
     input
         .lines()
-        .map(|line| {
+        .enumerate()
+        .map(|(i, line)| {
             let (left, right) = line.split_once(' ').unwrap();
             (
+                i,
                 left.chars().collect(),
                 right
                     .split(',')
@@ -20,18 +23,18 @@ fn parse(input: &str) -> Vec<(Vec<char>, Vec<u32>)> {
 }
 
 #[aoc(day12, part1)]
-fn part1(input: &[(Vec<char>, Vec<u32>)]) -> usize {
+fn part1(input: &[(usize, Vec<char>, Vec<u32>)]) -> usize {
     input
         .iter()
-        .map(|(states, groups)| solve(states.clone(), groups.clone(), 0, 0))
+        .map(|(i, states, groups)| solve(*i, states, groups, 0, 0))
         .sum()
 }
 
 #[aoc(day12, part2)]
-fn part2(input: &[(Vec<char>, Vec<u32>)]) -> usize {
+fn part2(input: &[(usize, Vec<char>, Vec<u32>)]) -> usize {
     input
         .iter()
-        .map(|(states, groups)| {
+        .map(|(i, states, groups)| {
             let states = {
                 let mut states = states.clone();
                 states.push('?');
@@ -39,14 +42,20 @@ fn part2(input: &[(Vec<char>, Vec<u32>)]) -> usize {
                 states.pop();
                 states
             };
-            solve(states, groups.repeat(5), 0, 0)
+            solve(*i + input.len(), &states, &groups.repeat(5), 0, 0)
         })
         .sum()
 }
 
 // Taken from: https://github.com/alcatrazEscapee/AdventOfCode/blob/main/2023/src/day12.cor#L12-L104
-#[memoize]
-fn solve(states: Vec<char>, groups: Vec<u32>, states_index: usize, groups_index: usize) -> usize {
+#[memoized(key_expr = (i, states_index, groups_index), store_type = HashMap<(usize, usize, usize), usize>)]
+fn solve(
+    i: usize,
+    states: &[char],
+    groups: &[u32],
+    states_index: usize,
+    groups_index: usize,
+) -> usize {
     let mut states_index = states_index;
     let mut groups_index = groups_index;
 
@@ -63,12 +72,7 @@ fn solve(states: Vec<char>, groups: Vec<u32>, states_index: usize, groups_index:
 
     let mut n = 0;
     if states[states_index] == '?' {
-        n += solve(
-            states.clone(),
-            groups.clone(),
-            states_index + 1,
-            groups_index,
-        );
+        n += solve(i, states, groups, states_index + 1, groups_index);
     }
 
     if groups_index >= groups.len() {
@@ -100,7 +104,7 @@ fn solve(states: Vec<char>, groups: Vec<u32>, states_index: usize, groups_index:
         return n;
     }
 
-    n += solve(states, groups, states_index + 1, groups_index);
+    n += solve(i, states, groups, states_index + 1, groups_index);
 
     n
 }
@@ -122,26 +126,30 @@ mod tests {
         "};
 
         let result = vec![
-            (vec!['?', '?', '?', '.', '#', '#', '#'], vec![1, 1, 3]),
+            (0, vec!['?', '?', '?', '.', '#', '#', '#'], vec![1, 1, 3]),
             (
+                1,
                 vec![
                     '.', '?', '?', '.', '.', '?', '?', '.', '.', '.', '?', '#', '#', '.',
                 ],
                 vec![1, 1, 3],
             ),
             (
+                2,
                 vec![
                     '?', '#', '?', '#', '?', '#', '?', '#', '?', '#', '?', '#', '?', '#', '?',
                 ],
                 vec![1, 3, 1, 6],
             ),
             (
+                3,
                 vec![
                     '?', '?', '?', '?', '.', '#', '.', '.', '.', '#', '.', '.', '.',
                 ],
                 vec![4, 1, 1],
             ),
             (
+                4,
                 vec![
                     '?', '?', '?', '?', '.', '#', '#', '#', '#', '#', '#', '.', '.', '#', '#', '#',
                     '#', '#', '.',
@@ -149,6 +157,7 @@ mod tests {
                 vec![1, 6, 5],
             ),
             (
+                5,
                 vec!['?', '#', '#', '#', '?', '?', '?', '?', '?', '?', '?', '?'],
                 vec![3, 2, 1],
             ),
